@@ -36,21 +36,52 @@ public enum KitoToastActionRole: Equatable, Sendable {
     case primary, destructive, cancel
 }
 
+/// What an action button actually shows. `icon` on `KitoToastAction` is
+/// ignored when this is `.titleOnly`, and an icon-only button with no
+/// `icon` set just falls back to its title, so a screen can't end up with
+/// a blank, untappable-looking button.
+public enum KitoToastActionContent: Equatable, Sendable {
+    case titleOnly
+    case iconOnly
+    case iconAndTitle
+}
+
 /// One button in a toast's action row. A toast can carry several — pass
 /// multiple `KitoToastAction`s to `actions:` for e.g. "Undo" + "View".
 public struct KitoToastAction: Sendable {
     public var title: String
+    public var icon: String?
+    public var content: KitoToastActionContent
     public var role: KitoToastActionRole
     public var handler: @MainActor @Sendable () -> Void
 
     public init(
         title: String,
+        icon: String? = nil,
+        content: KitoToastActionContent = .titleOnly,
         role: KitoToastActionRole = .primary,
         handler: @escaping @MainActor @Sendable () -> Void
     ) {
         self.title = title
+        self.icon = icon
+        self.content = content
         self.role = role
         self.handler = handler
+    }
+}
+
+/// A live 0...1 fill for an in-progress toast (an upload, a sync, a
+/// download) — set on the toast that `KitoToastCenter.show(_:)` first
+/// displays, then advanced in place with `KitoToastCenter.updateProgress
+/// (id:fraction:)` so the bar animates smoothly instead of the toast being
+/// replaced frame to frame. Finish the flow with `KitoToastCenter.complete
+/// (id:style:title:message:)`, which morphs the same toast into a normal
+/// success/error state rather than dismissing and queuing a new one.
+public struct KitoToastProgress: Equatable, Sendable {
+    public var fraction: Double
+
+    public init(fraction: Double) {
+        self.fraction = min(max(fraction, 0), 1)
     }
 }
 
@@ -74,6 +105,7 @@ public struct KitoToast: Identifiable, Sendable {
     /// default material background.
     public var backgroundStyle: KitoBackgroundStyle?
     public var actions: [KitoToastAction]
+    public var progress: KitoToastProgress?
     public var duration: TimeInterval?
 
     public init(
@@ -87,6 +119,7 @@ public struct KitoToast: Identifiable, Sendable {
         accentColor: Color? = nil,
         backgroundStyle: KitoBackgroundStyle? = nil,
         actions: [KitoToastAction] = [],
+        progress: KitoToastProgress? = nil,
         duration: TimeInterval? = 3
     ) {
         self.id = id
@@ -99,6 +132,10 @@ public struct KitoToast: Identifiable, Sendable {
         self.accentColor = accentColor
         self.backgroundStyle = backgroundStyle
         self.actions = actions
-        self.duration = actions.isEmpty ? duration : nil
+        self.progress = progress
+        // A toast tracking progress stays up until `KitoToastCenter.complete`
+        // morphs it, same reasoning as actions: nothing with unfinished
+        // work to report should be able to auto-dismiss out from under it.
+        self.duration = (actions.isEmpty && progress == nil) ? duration : nil
     }
 }

@@ -55,15 +55,33 @@ struct KitoToastView: View {
                     Spacer(minLength: 0)
                 }
 
+                if let progress = toast.progress {
+                    GeometryReader { geo in
+                        Capsule()
+                            .fill(theme.colors.surfaceMuted)
+                            .overlay(alignment: .leading) {
+                                Capsule()
+                                    .fill(accentColor)
+                                    .frame(width: geo.size.width * progress.fraction)
+                            }
+                    }
+                    .frame(height: 5)
+                    .animation(.easeOut(duration: 0.2), value: progress.fraction)
+                    .padding(.top, 2)
+                }
+
                 if !toast.actions.isEmpty {
                     HStack(spacing: theme.spacing.md) {
                         ForEach(Array(toast.actions.enumerated()), id: \.offset) { _, action in
-                            Button(action.title) {
+                            Button {
                                 action.handler()
                                 onDismiss()
+                            } label: {
+                                actionLabel(action)
                             }
                             .font(theme.typography.label.bold())
                             .foregroundStyle(color(for: action.role))
+                            .accessibilityLabel(action.title)
                         }
                         Spacer(minLength: 0)
                     }
@@ -149,6 +167,27 @@ struct KitoToastView: View {
         case .error: return theme.colors.danger
         case .warning: return theme.colors.warning
         case .info: return theme.colors.primary
+        }
+    }
+
+    @ViewBuilder
+    private func actionLabel(_ action: KitoToastAction) -> some View {
+        switch action.content {
+        case .titleOnly:
+            Text(action.title)
+        case .iconOnly:
+            if let icon = action.icon {
+                Image(systemName: icon)
+            } else {
+                Text(action.title)
+            }
+        case .iconAndTitle:
+            HStack(spacing: 4) {
+                if let icon = action.icon {
+                    Image(systemName: icon)
+                }
+                Text(action.title)
+            }
         }
     }
 
