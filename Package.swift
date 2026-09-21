@@ -1,0 +1,24 @@
+// swift-tools-version: 5.9
+//
+//  Package.swift
+//  KitoToasts
+//
+//  Created by Wycliff on 3/8/26.
+//  Copyright © 2026 wyksoftsinc.com. All rights reserved.
+//
+
+
+import PackageDescription
+
+let package = Package(
+    name: "KitoToasts",
+    platforms: [.iOS(.v17)],
+    products: [.library(name: "KitoToasts", targets: ["KitoToasts"])],
+    dependencies: [
+        .package(url: "https://github.com/WykSofts-Inc/KitoCore.git", from: "1.0.0"),
+    ],
+    targets: [
+        .target(name: "KitoToasts", dependencies: [.product(name: "KitoCore", package: "KitoCore")]),
+        .testTarget(name: "KitoToastsTests", dependencies: ["KitoToasts"]),
+    ]
+)
