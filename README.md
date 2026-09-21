@@ -76,6 +76,33 @@ toasts.show(KitoToast(
 toasts.show(KitoToast(message: "Achievement unlocked", icon: .custom("star.fill"), accentColor: .purple))
 ```
 
+**Background — color, gradient, or image, per toast or app-wide:**
+```swift
+// One celebratory toast with a gradient background
+toasts.show(KitoToast(
+    title: "Level up!",
+    message: "You've reached level 12.",
+    icon: .custom("bolt.fill"),
+    backgroundStyle: .gradient(.linear(.purple, .indigo))
+))
+
+// An image background with a dark tint so light text stays legible
+toasts.show(KitoToast(
+    message: "New season available",
+    backgroundStyle: .image(.url(seasonBannerURL), overlayTint: .black.opacity(0.35))
+))
+
+// Every toast in the app defaults to a solid brand color instead of material
+RootView()
+    .kitoToastHost(toasts)
+    .kitoToastAppearance(KitoToastAppearance(backgroundStyle: .color(.indigo)))
+```
+
+`KitoBackgroundStyle` (from `KitoCore`) is the same shared background type
+every Kito kit's appearance struct composes — `.color`, `.gradient`
+(`KitoGradient`, linear/radial/angular), `.material` (the original look),
+or `.image(.asset/.systemImage/.url, overlayTint:)`.
+
 **App-wide appearance — fonts, corner radius, icon size, line limits:**
 ```swift
 RootView()
@@ -117,8 +144,9 @@ current toast early, with rubber-band resistance as you drag.
 | `KitoToast.isBold` | Bolds both title and message |
 | `KitoToast.icon` | `.automatic` (from `style`), `.custom(systemName)`, or `.none` |
 | `KitoToast.accentColor` | Overrides the style-derived accent bar/icon color for one toast |
+| `KitoToast.backgroundStyle` | Per-toast color/gradient/image background override |
 | `KitoToast.actions` | Any number of `KitoToastAction`s, each with a `role` (`.primary`/`.destructive`/`.cancel`) |
-| `KitoToastAppearance` | App-wide fonts, corner radius, accent bar visibility, icon size, line limits, max width |
+| `KitoToastAppearance` | App-wide fonts, corner radius, accent bar visibility, icon size, line limits, max width, default background |
 
 ## License
 
