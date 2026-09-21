@@ -73,7 +73,7 @@ struct KitoToastView: View {
             .padding(.trailing, theme.spacing.md)
         }
         .frame(maxWidth: appearance.maxWidth)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: appearance.cornerRadius))
+        .kitoBackground(resolvedBackgroundStyle, cornerRadius: appearance.cornerRadius)
         .overlay(RoundedRectangle(cornerRadius: appearance.cornerRadius).stroke(theme.colors.border, lineWidth: 1))
         .shadow(color: .black.opacity(0.15), radius: 16, y: 6)
         .padding(.horizontal, theme.spacing.md)
@@ -104,6 +104,13 @@ struct KitoToastView: View {
             }
         }
         .accessibilityElement(children: .combine)
+    }
+
+    /// Per-toast `backgroundStyle` wins, then the app-wide appearance
+    /// default, then the original `.ultraThinMaterial` look so existing
+    /// toasts with neither set render exactly as before.
+    private var resolvedBackgroundStyle: KitoBackgroundStyle {
+        toast.backgroundStyle ?? appearance.backgroundStyle ?? .material
     }
 
     private var resolvedIconName: String? {

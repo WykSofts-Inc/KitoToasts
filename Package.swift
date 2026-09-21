@@ -19,6 +19,12 @@ let package = Package(
     ],
     targets: [
         .target(name: "KitoToasts", dependencies: [.product(name: "KitoCore", package: "KitoCore")]),
-        .testTarget(name: "KitoToastsTests", dependencies: ["KitoToasts"]),
+        .testTarget(
+            name: "KitoToastsTests",
+            dependencies: [
+                "KitoToasts",
+                .product(name: "KitoCore", package: "KitoCore"),
+            ]
+        ),
     ]
 )

@@ -7,13 +7,14 @@
 //
 
 import SwiftUI
+import KitoCore
 
-/// App-wide toast styling — fonts per title size, corner radius, whether the
-/// colored accent bar shows, icon size, and line limits. Set once via
-/// `.kitoToastAppearance(_:)` near your app's root; every toast reads it
-/// through the environment the same way charts read `kitoChartTheme`.
-/// Per-toast fields (`KitoToast.isBold`, `.icon`, `.accentColor`) layer on
-/// top of this for one-off overrides.
+/// App-wide toast styling — fonts per title size, corner radius, background,
+/// whether the colored accent bar shows, icon size, and line limits. Set
+/// once via `.kitoToastAppearance(_:)` near your app's root; every toast
+/// reads it through the environment the same way charts read
+/// `kitoChartTheme`. Per-toast fields (`KitoToast.isBold`, `.icon`,
+/// `.accentColor`, `.backgroundStyle`) layer on top of this for one-off overrides.
 public struct KitoToastAppearance: Sendable {
     public var largeTitleFont: Font
     public var mediumTitleFont: Font
@@ -25,6 +26,9 @@ public struct KitoToastAppearance: Sendable {
     public var maxTitleLines: Int
     public var maxMessageLines: Int
     public var maxWidth: CGFloat?
+    /// `nil` keeps the original `.ultraThinMaterial` look — set this to give
+    /// every toast in the app a color, gradient, or image background by default.
+    public var backgroundStyle: KitoBackgroundStyle?
 
     public init(
         largeTitleFont: Font = .system(size: 20, weight: .bold),
@@ -36,7 +40,8 @@ public struct KitoToastAppearance: Sendable {
         iconSize: CGFloat = 18,
         maxTitleLines: Int = 2,
         maxMessageLines: Int = 3,
-        maxWidth: CGFloat? = 480
+        maxWidth: CGFloat? = 480,
+        backgroundStyle: KitoBackgroundStyle? = nil
     ) {
         self.largeTitleFont = largeTitleFont
         self.mediumTitleFont = mediumTitleFont
@@ -48,6 +53,7 @@ public struct KitoToastAppearance: Sendable {
         self.maxTitleLines = maxTitleLines
         self.maxMessageLines = maxMessageLines
         self.maxWidth = maxWidth
+        self.backgroundStyle = backgroundStyle
     }
 
     public func titleFont(for style: KitoToastTitleStyle) -> Font {

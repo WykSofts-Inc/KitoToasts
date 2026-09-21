@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import KitoCore
 
 public enum KitoToastStyle: Equatable, Sendable {
     case success, error, warning, info
@@ -67,6 +68,11 @@ public struct KitoToast: Identifiable, Sendable {
     public var titleStyle: KitoToastTitleStyle
     public var isBold: Bool
     public var accentColor: Color?
+    /// Overrides the app-wide `KitoToastAppearance.backgroundStyle` for just
+    /// this toast — e.g. a gradient or image background for one celebratory
+    /// "achievement unlocked" toast, while everything else stays on the
+    /// default material background.
+    public var backgroundStyle: KitoBackgroundStyle?
     public var actions: [KitoToastAction]
     public var duration: TimeInterval?
 
@@ -79,6 +85,7 @@ public struct KitoToast: Identifiable, Sendable {
         titleStyle: KitoToastTitleStyle = .medium,
         isBold: Bool = false,
         accentColor: Color? = nil,
+        backgroundStyle: KitoBackgroundStyle? = nil,
         actions: [KitoToastAction] = [],
         duration: TimeInterval? = 3
     ) {
@@ -90,6 +97,7 @@ public struct KitoToast: Identifiable, Sendable {
         self.titleStyle = titleStyle
         self.isBold = isBold
         self.accentColor = accentColor
+        self.backgroundStyle = backgroundStyle
         self.actions = actions
         self.duration = actions.isEmpty ? duration : nil
     }
