@@ -8,6 +8,7 @@
 
 import XCTest
 import SwiftUI
+import KitoCore
 @testable import KitoToasts
 
 @MainActor
@@ -72,6 +73,27 @@ final class KitoToastsTests: XCTestCase {
         let appearance = KitoToastAppearance(largeTitleFont: large)
         XCTAssertEqual(appearance.titleFont(for: .large), large)
         XCTAssertNotEqual(appearance.titleFont(for: .medium), large)
+    }
+
+    func testBackgroundStyleDefaultsToNilOnBothToastAndAppearance() {
+        XCTAssertNil(KitoToast(message: "x").backgroundStyle)
+        XCTAssertNil(KitoToastAppearance.default.backgroundStyle)
+    }
+
+    func testAppearanceCanSetADefaultBackgroundStyle() {
+        let appearance = KitoToastAppearance(backgroundStyle: .color(.purple))
+        guard case .color(let color) = appearance.backgroundStyle else {
+            return XCTFail("expected .color(.purple)")
+        }
+        XCTAssertEqual(color, .purple)
+    }
+
+    func testPerToastBackgroundStyleIsPreserved() {
+        let toast = KitoToast(message: "x", backgroundStyle: .gradient(.linear(.pink, .orange)))
+        guard case .gradient(let gradient) = toast.backgroundStyle else {
+            return XCTFail("expected .gradient")
+        }
+        XCTAssertEqual(gradient.colors, [.pink, .orange])
     }
 
     func testDefaultPositionIsTop() {
