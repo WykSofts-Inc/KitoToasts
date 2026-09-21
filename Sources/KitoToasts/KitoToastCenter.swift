@@ -13,7 +13,13 @@ import KitoCore
 /// Owns the toast queue for one screen (or the whole app, if hosted at the
 /// root). Only one toast is on screen at a time — `show` enqueues, the host
 /// view drains the queue as each toast's lifetime ends.
+///
+/// `@MainActor`-isolated because it's a UI-bound ViewModel driven by
+/// SwiftUI: the auto-dismiss `Task` below inherits this actor from its
+/// creation context, so it can call back into `self` after `Task.sleep`
+/// without an explicit `MainActor.run` hop.
 @Observable
+@MainActor
 public final class KitoToastCenter: KitoViewModel {
     public private(set) var current: KitoToast?
     public var position: KitoToastPosition
@@ -47,7 +53,7 @@ public final class KitoToastCenter: KitoViewModel {
             dismissTask = Task { [weak self] in
                 try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
                 guard !Task.isCancelled else { return }
-                await MainActor.run { self?.dismissCurrent() }
+                self?.dismissCurrent()
             }
         }
     }
