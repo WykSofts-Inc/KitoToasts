@@ -45,6 +45,37 @@ public final class KitoToastCenter: KitoViewModel {
         advance()
     }
 
+    /// Advances a progress toast's fill in place — the same toast slot
+    /// keeps animating rather than being replaced, which is what makes the
+    /// bar read as one continuous upload instead of a flicker of new toasts.
+    /// A no-op if `id` isn't the toast currently on screen (it already
+    /// finished, or was dismissed).
+    public func updateProgress(id: UUID, fraction: Double) {
+        guard current?.id == id else { return }
+        current?.progress = KitoToastProgress(fraction: fraction)
+    }
+
+    /// Morphs the current progress toast into a normal success/error/etc.
+    /// state — same toast, same slot, no dismiss-then-requeue flicker. Ends
+    /// the "in progress, can't auto-dismiss" hold: the resulting toast
+    /// follows `duration` (`3` seconds by default) like any other.
+    public func complete(id: UUID, style: KitoToastStyle, title: String? = nil, message: String? = nil, duration: TimeInterval? = 3) {
+        guard current?.id == id else { return }
+        current?.progress = nil
+        current?.style = style
+        if let title { current?.title = title }
+        if let message { current?.message = message }
+        current?.duration = duration
+        if let duration {
+            dismissTask?.cancel()
+            dismissTask = Task { [weak self] in
+                try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
+                guard !Task.isCancelled else { return }
+                self?.dismissCurrent()
+            }
+        }
+    }
+
     private func advance() {
         guard current == nil, !queue.isEmpty else { return }
         let next = queue.removeFirst()

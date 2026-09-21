@@ -11,6 +11,7 @@ import KitoCore
 
 struct KitoToastView: View {
     @Environment(\.kitoTheme) private var theme
+    @Environment(\.kitoToastAppearance) private var appearance
     let toast: KitoToast
     let onDismiss: () -> Void
 
@@ -18,47 +19,86 @@ struct KitoToastView: View {
     @State private var dragOffset: CGFloat = 0
 
     var body: some View {
-        HStack(spacing: theme.spacing.sm) {
-            Rectangle()
-                .fill(accentColor)
-                .frame(width: 4)
-                .clipShape(RoundedRectangle(cornerRadius: 2))
-
-            Image(systemName: iconName)
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(accentColor)
-                .scaleEffect(iconScale)
-                .padding(.leading, theme.spacing.xs)
-
-            Text(toast.message)
-                .font(theme.typography.body)
-                .foregroundStyle(theme.colors.onSurface)
-                .lineLimit(2)
-
-            Spacer(minLength: 0)
-
-            if let action = toast.action {
-                Button(action.title) {
-                    action.handler()
-                    onDismiss()
-                }
-                .font(theme.typography.label.bold())
-                .foregroundStyle(theme.colors.primary)
+        HStack(spacing: 0) {
+            if appearance.showsAccentBar {
+                Rectangle()
+                    .fill(accentColor)
+                    .frame(width: 4)
+                    .frame(maxHeight: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 2))
+                Spacer().frame(width: theme.spacing.sm)
             }
+
+            VStack(alignment: .leading, spacing: theme.spacing.xs) {
+                HStack(alignment: .top, spacing: theme.spacing.sm) {
+                    if let iconName = resolvedIconName {
+                        Image(systemName: iconName)
+                            .font(.system(size: appearance.iconSize, weight: .bold))
+                            .foregroundStyle(accentColor)
+                            .scaleEffect(iconScale)
+                            .padding(.top, 1)
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        if let title = toast.title {
+                            Text(title)
+                                .font(titleFont)
+                                .foregroundStyle(theme.colors.onSurface)
+                                .lineLimit(appearance.maxTitleLines)
+                        }
+                        Text(toast.message)
+                            .font(messageFont)
+                            .foregroundStyle(theme.colors.onSurface.opacity(toast.title == nil ? 1 : 0.75))
+                            .lineLimit(appearance.maxMessageLines)
+                    }
+
+                    Spacer(minLength: 0)
+                }
+
+                if let progress = toast.progress {
+                    GeometryReader { geo in
+                        Capsule()
+                            .fill(theme.colors.surfaceMuted)
+                            .overlay(alignment: .leading) {
+                                Capsule()
+                                    .fill(accentColor)
+                                    .frame(width: geo.size.width * progress.fraction)
+                            }
+                    }
+                    .frame(height: 5)
+                    .animation(.easeOut(duration: 0.2), value: progress.fraction)
+                    .padding(.top, 2)
+                }
+
+                if !toast.actions.isEmpty {
+                    HStack(spacing: theme.spacing.md) {
+                        ForEach(Array(toast.actions.enumerated()), id: \.offset) { _, action in
+                            Button {
+                                action.handler()
+                                onDismiss()
+                            } label: {
+                                actionLabel(action)
+                            }
+                            .font(theme.typography.label.bold())
+                            .foregroundStyle(color(for: action.role))
+                            .accessibilityLabel(action.title)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                }
+            }
+            .padding(.vertical, theme.spacing.sm)
+            .padding(.trailing, theme.spacing.md)
         }
-        .padding(.vertical, theme.spacing.sm)
-        .padding(.trailing, theme.spacing.md)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: theme.radii.lg))
-        .overlay(RoundedRectangle(cornerRadius: theme.radii.lg).stroke(theme.colors.border, lineWidth: 1))
+        .frame(maxWidth: appearance.maxWidth)
+        .kitoBackground(resolvedBackgroundStyle, cornerRadius: appearance.cornerRadius)
+        .overlay(RoundedRectangle(cornerRadius: appearance.cornerRadius).stroke(theme.colors.border, lineWidth: 1))
         .shadow(color: .black.opacity(0.15), radius: 16, y: 6)
         .padding(.horizontal, theme.spacing.md)
         // `.overlay(alignment:)` on KitoToastHost proposes the FULL screen
-        // size to this view, not just its natural size — `alignment` only
-        // positions within that proposal, it doesn't shrink-wrap it. Without
-        // this, the Spacer() above expands to fill the entire proposed
-        // height as well as width, stretching the toast to fill the screen.
-        // `.fixedSize` forces SwiftUI to use this view's own ideal size
-        // instead of the parent's proposal.
+        // size to this view, not just its natural size — alignment only
+        // positions within that proposal, it doesn't shrink-wrap it.
+        // `.fixedSize` forces SwiftUI to use this view's own ideal height.
         .fixedSize(horizontal: false, vertical: true)
         .offset(y: dragOffset)
         .opacity(1 - min(abs(dragOffset) / 120, 0.6))
@@ -84,7 +124,22 @@ struct KitoToastView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var iconName: String {
+    /// Per-toast `backgroundStyle` wins, then the app-wide appearance
+    /// default, then the original `.ultraThinMaterial` look so existing
+    /// toasts with neither set render exactly as before.
+    private var resolvedBackgroundStyle: KitoBackgroundStyle {
+        toast.backgroundStyle ?? appearance.backgroundStyle ?? .material
+    }
+
+    private var resolvedIconName: String? {
+        switch toast.icon {
+        case .automatic: return defaultIconName
+        case .custom(let name): return name
+        case .none: return nil
+        }
+    }
+
+    private var defaultIconName: String {
         switch toast.style {
         case .success: return "checkmark.circle.fill"
         case .error: return "xmark.circle.fill"
@@ -93,12 +148,54 @@ struct KitoToastView: View {
         }
     }
 
+    private var titleFont: Font {
+        let base = appearance.titleFont(for: toast.titleStyle)
+        return toast.isBold ? base.bold() : base
+    }
+
+    private var messageFont: Font {
+        toast.isBold ? appearance.messageFont.bold() : appearance.messageFont
+    }
+
     private var accentColor: Color {
+        toast.accentColor ?? defaultAccentColor
+    }
+
+    private var defaultAccentColor: Color {
         switch toast.style {
         case .success: return theme.colors.success
         case .error: return theme.colors.danger
         case .warning: return theme.colors.warning
         case .info: return theme.colors.primary
+        }
+    }
+
+    @ViewBuilder
+    private func actionLabel(_ action: KitoToastAction) -> some View {
+        switch action.content {
+        case .titleOnly:
+            Text(action.title)
+        case .iconOnly:
+            if let icon = action.icon {
+                Image(systemName: icon)
+            } else {
+                Text(action.title)
+            }
+        case .iconAndTitle:
+            HStack(spacing: 4) {
+                if let icon = action.icon {
+                    Image(systemName: icon)
+                }
+                Text(action.title)
+            }
+        }
+    }
+
+    private func color(for role: KitoToastActionRole) -> Color {
+        switch role {
+        case .primary: return theme.colors.primary
+        case .destructive: return theme.colors.danger
+        case .cancel: return theme.colors.onBackground.opacity(0.6)
         }
     }
 }
