@@ -52,6 +52,14 @@ struct KitoToastView: View {
         .overlay(RoundedRectangle(cornerRadius: theme.radii.lg).stroke(theme.colors.border, lineWidth: 1))
         .shadow(color: .black.opacity(0.15), radius: 16, y: 6)
         .padding(.horizontal, theme.spacing.md)
+        // `.overlay(alignment:)` on KitoToastHost proposes the FULL screen
+        // size to this view, not just its natural size — `alignment` only
+        // positions within that proposal, it doesn't shrink-wrap it. Without
+        // this, the Spacer() above expands to fill the entire proposed
+        // height as well as width, stretching the toast to fill the screen.
+        // `.fixedSize` forces SwiftUI to use this view's own ideal size
+        // instead of the parent's proposal.
+        .fixedSize(horizontal: false, vertical: true)
         .offset(y: dragOffset)
         .opacity(1 - min(abs(dragOffset) / 120, 0.6))
         .gesture(
