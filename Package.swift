@@ -15,7 +15,7 @@ let package = Package(
     platforms: [.iOS(.v17)],
     products: [.library(name: "KitoToasts", targets: ["KitoToasts"])],
     dependencies: [
-        .package(url: "https://github.com/WykSofts-Inc/KitoCore.git", from: "1.0.0"),
+        .package(url: "https://github.com/WykSofts-Inc/KitoCore.git", from: "1.1.0"),
     ],
     targets: [
         .target(name: "KitoToasts", dependencies: [.product(name: "KitoCore", package: "KitoCore")]),

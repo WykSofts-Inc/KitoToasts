@@ -7,7 +7,7 @@ and an app-wide appearance config.
 ## Install
 
 ```swift
-.package(url: "https://github.com/WykSofts-Inc/KitoToasts.git", from: "1.0.0"),
+.package(url: "https://github.com/WykSofts-Inc/KitoToasts.git", from: "1.1.0"),
 ```
 
 ## Setup — host once at the root
@@ -134,6 +134,42 @@ RootView()
 
 **Swipe to dismiss** is built in — a vertical drag over 50pt dismisses the
 current toast early, with rubber-band resistance as you drag.
+
+## Layouts, stacks, promises and undo
+
+**Layouts.** Pass `layout:`: `.card` (default), `.pill`, `.banner` (edge to edge in the accent
+colour), `.glass`, or `.island` (a black capsule that grows out of the Dynamic Island).
+
+```swift
+toasts.show(KitoToast(title: "AirPods connected", message: "Battery 84%", icon: .custom("airpods"), layout: .island))
+toasts.show(KitoToast(message: "Achieng sent you KES 2,000", style: .success,
+                      avatar: KitoToastAvatar(initials: "AO"), layout: .glass))
+```
+
+**Stack instead of queue.** New toasts land on top and older ones peek out behind; tap to fan
+them out (auto-dismiss pauses while they're fanned out).
+
+```swift
+@State private var toasts = KitoToastCenter(presentation: .stacked)    // or .stack(maxVisible: 5)
+```
+
+**Promise.** A loading toast that turns into success or error when the work finishes:
+
+```swift
+try await toasts.promise(loading: "Paying KES 1,250…", success: "Paid", failure: "Payment failed") {
+    try await api.pay()
+}
+```
+
+**Undo with a countdown.** The ring empties over `duration`, then the toast goes:
+
+```swift
+toasts.show(KitoToast(message: "Chat deleted", actions: [KitoToastAction(title: "Undo") { restore() }],
+                      duration: 5, showsCountdown: true))
+```
+
+Toasts play a success, warning or error haptic as they appear; turn it off with
+`KitoToastAppearance(playsHaptics: false)`.
 
 ## Every customization knob
 
