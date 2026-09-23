@@ -168,4 +168,92 @@ final class KitoToastsTests: XCTestCase {
         XCTAssertEqual(action.icon, "arrow.clockwise")
         XCTAssertEqual(action.content, .iconAndTitle)
     }
+
+    // MARK: - Stacking
+
+    func testStackShowsNewestFirstAndDropsTheOldest() {
+        let center = KitoToastCenter(presentation: .stack(maxVisible: 2))
+        center.show("One")
+        center.show("Two")
+        center.show("Three")
+        XCTAssertEqual(center.visible.map(\.message), ["Three", "Two"])
+        XCTAssertEqual(center.current?.message, "Three")
+    }
+
+    func testDismissingFromTheMiddleOfAStack() {
+        let center = KitoToastCenter(presentation: .stacked)
+        let middle = KitoToast(message: "Middle")
+        center.show("Bottom")
+        center.show(middle)
+        center.show("Top")
+        center.dismiss(id: middle.id)
+        XCTAssertEqual(center.visible.map(\.message), ["Top", "Bottom"])
+    }
+
+    func testStackCollapsesWhenOneIsLeft() {
+        let center = KitoToastCenter(presentation: .stacked)
+        center.show("A")
+        center.show("B")
+        center.isStackExpanded = true
+        center.dismissCurrent()
+        XCTAssertFalse(center.isStackExpanded)
+    }
+
+    func testSingleModeStillQueues() {
+        let center = KitoToastCenter()
+        center.show("A")
+        center.show("B")
+        XCTAssertEqual(center.visible.map(\.message), ["A"])
+        center.dismissAll()
+        XCTAssertNil(center.current)
+        XCTAssertTrue(center.visible.isEmpty)
+    }
+
+    // MARK: - Loading, promise and countdown
+
+    func testLoadingToastWaitsToBeCompleted() {
+        let toast = KitoToast(message: "Uploading", isLoading: true)
+        XCTAssertNil(toast.duration)
+    }
+
+    func testCompleteClearsLoadingEvenWhenQueued() {
+        let center = KitoToastCenter()
+        center.show("First")
+        let loading = KitoToast(message: "Syncing", isLoading: true)
+        center.show(loading)
+        center.complete(id: loading.id, style: .success, message: "Synced")
+        center.dismissCurrent()
+        XCTAssertEqual(center.current?.message, "Synced")
+        XCTAssertEqual(center.current?.isLoading, false)
+        XCTAssertEqual(center.current?.style, .success)
+    }
+
+    func testPromiseTurnsIntoSuccess() async throws {
+        let center = KitoToastCenter()
+        let value = try await center.promise(loading: "Saving", success: "Saved") { 42 }
+        XCTAssertEqual(value, 42)
+        XCTAssertEqual(center.current?.message, "Saved")
+        XCTAssertEqual(center.current?.style, .success)
+    }
+
+    func testPromiseTurnsIntoErrorAndRethrows() async {
+        struct Failure: Error {}
+        let center = KitoToastCenter()
+        do {
+            _ = try await center.promise(loading: "Paying", success: "Paid", failure: "Payment failed") { () async throws -> Int in throw Failure() }
+            XCTFail("should throw")
+        } catch {
+            XCTAssertEqual(center.current?.message, "Payment failed")
+            XCTAssertEqual(center.current?.style, .error)
+        }
+    }
+
+    func testCountdownToastExpiresEvenWithActions() {
+        let toast = KitoToast(message: "Deleted", actions: [KitoToastAction(title: "Undo") {}], duration: 4, showsCountdown: true)
+        XCTAssertEqual(toast.duration, 4)
+    }
+
+    func testLayoutDefaultsToCard() {
+        XCTAssertEqual(KitoToast(message: "Hi").layout, .card)
+    }
 }

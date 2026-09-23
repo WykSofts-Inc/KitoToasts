@@ -85,6 +85,33 @@ public struct KitoToastProgress: Equatable, Sendable {
     }
 }
 
+/// How a toast is laid out on screen.
+public enum KitoToastLayout: Equatable, Sendable {
+    /// A rounded card with an accent bar, icon, text and actions.
+    case card
+    /// A compact capsule: icon and one line.
+    case pill
+    /// Edge to edge, filled with the accent colour.
+    case banner
+    /// Frosted glass with a soft glow in the accent colour.
+    case glass
+    /// A black capsule that grows out of the Dynamic Island.
+    case island
+}
+
+/// A person or brand shown in place of the icon, e.g. "Achieng sent you KES 2,000".
+public struct KitoToastAvatar: Equatable, Sendable {
+    public var initials: String
+    public var colors: [Color]
+    public var systemImage: String?
+
+    public init(initials: String, colors: [Color] = [.orange, .pink], systemImage: String? = nil) {
+        self.initials = initials
+        self.colors = colors
+        self.systemImage = systemImage
+    }
+}
+
 /// One queued toast. `message` is the only required text — `title` is an
 /// optional, more prominent headline above it (pair with `titleStyle: .large`
 /// for an attention-grabbing banner). `duration` of `nil` means it stays
@@ -107,6 +134,12 @@ public struct KitoToast: Identifiable, Sendable {
     public var actions: [KitoToastAction]
     public var progress: KitoToastProgress?
     public var duration: TimeInterval?
+    public var layout: KitoToastLayout
+    public var avatar: KitoToastAvatar?
+    /// Shows a spinner in place of the icon and holds the toast until it is completed.
+    public var isLoading: Bool
+    /// Shows a ring that empties over `duration`, e.g. beside an Undo action.
+    public var showsCountdown: Bool
 
     public init(
         id: UUID = UUID(),
@@ -120,7 +153,11 @@ public struct KitoToast: Identifiable, Sendable {
         backgroundStyle: KitoBackgroundStyle? = nil,
         actions: [KitoToastAction] = [],
         progress: KitoToastProgress? = nil,
-        duration: TimeInterval? = 3
+        duration: TimeInterval? = 3,
+        layout: KitoToastLayout = .card,
+        avatar: KitoToastAvatar? = nil,
+        isLoading: Bool = false,
+        showsCountdown: Bool = false
     ) {
         self.id = id
         self.title = title
@@ -133,9 +170,18 @@ public struct KitoToast: Identifiable, Sendable {
         self.backgroundStyle = backgroundStyle
         self.actions = actions
         self.progress = progress
+        self.layout = layout
+        self.avatar = avatar
+        self.isLoading = isLoading
+        self.showsCountdown = showsCountdown
         // A toast tracking progress stays up until `KitoToastCenter.complete`
         // morphs it, same reasoning as actions: nothing with unfinished
         // work to report should be able to auto-dismiss out from under it.
-        self.duration = (actions.isEmpty && progress == nil) ? duration : nil
+        // A countdown toast is the exception: its actions are meant to expire.
+        if showsCountdown {
+            self.duration = duration ?? 5
+        } else {
+            self.duration = (actions.isEmpty && progress == nil && !isLoading) ? duration : nil
+        }
     }
 }

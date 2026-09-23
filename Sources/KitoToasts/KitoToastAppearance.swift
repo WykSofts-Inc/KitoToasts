@@ -29,6 +29,8 @@ public struct KitoToastAppearance: Sendable {
     /// `nil` keeps the original `.ultraThinMaterial` look — set this to give
     /// every toast in the app a color, gradient, or image background by default.
     public var backgroundStyle: KitoBackgroundStyle?
+    /// Plays a success, warning or error haptic when a toast appears or completes.
+    public var playsHaptics: Bool
 
     public init(
         largeTitleFont: Font = .system(size: 20, weight: .bold),
@@ -41,7 +43,8 @@ public struct KitoToastAppearance: Sendable {
         maxTitleLines: Int = 2,
         maxMessageLines: Int = 3,
         maxWidth: CGFloat? = 480,
-        backgroundStyle: KitoBackgroundStyle? = nil
+        backgroundStyle: KitoBackgroundStyle? = nil,
+        playsHaptics: Bool = true
     ) {
         self.largeTitleFont = largeTitleFont
         self.mediumTitleFont = mediumTitleFont
@@ -54,6 +57,7 @@ public struct KitoToastAppearance: Sendable {
         self.maxMessageLines = maxMessageLines
         self.maxWidth = maxWidth
         self.backgroundStyle = backgroundStyle
+        self.playsHaptics = playsHaptics
     }
 
     public func titleFont(for style: KitoToastTitleStyle) -> Font {
