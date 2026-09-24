@@ -470,7 +470,17 @@ struct KitoToastHeightsKey: PreferenceKey {
 public extension View {
     /// Attach a toast center to this subtree's overlay. Typically called once
     /// on the app's root view.
-    func kitoToastHost(_ center: KitoToastCenter) -> some View {
-        modifier(KitoToastHost(center: center))
+    ///
+    /// With the default `.overlay` placement, toasts draw in this view's own
+    /// overlay, so anything presented over it (a sheet, a `fullScreenCover`)
+    /// hides them. Pass `.window` to draw them in a pass-through window above
+    /// the app instead, so a single host at the root shows toasts over covers
+    /// and sheets too:
+    ///
+    /// ```swift
+    /// RootView().kitoToastHost(toasts, placement: .window)
+    /// ```
+    func kitoToastHost(_ center: KitoToastCenter, placement: KitoToastHostPlacement = .overlay) -> some View {
+        modifier(KitoToastPlacementHost(center: center, placement: placement))
     }
 }
