@@ -1,5 +1,7 @@
 # KitoToasts
 
+**[Documentation](https://wyksofts-inc.github.io/KitoToasts/documentation/kitotoasts/)**
+
 Queued, themeable toast/snackbar notifications for SwiftUI — customizable
 title size, bold emphasis, custom or hidden icons, multiple action buttons,
 and an app-wide appearance config.
